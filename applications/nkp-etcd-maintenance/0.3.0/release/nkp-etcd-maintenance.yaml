@@ -1,0 +1,84 @@
+---
+# ---------------------------------------------------------------------------
+# Virtual-catalog chart source.
+#
+# The HelmRelease below pulls its chart files from THIS catalog repository
+# (path: charts/nkp-etcd-maintenance), via a Flux GitRepository.
+#
+# This means:
+#   - No external OCI / Helm registry needed.
+#   - Pushing a new chart version = updating files in this repo + bumping
+#     `version` in this manifest.
+#   - The same git source can drive both the catalog scan AND the chart
+#     pull because Flux disambiguates by `kind:` (Kustomization vs HelmRelease).
+#
+# A production catalog would replace this GitRepository with an OCIRepository:
+#
+#   apiVersion: source.toolkit.fluxcd.io/v1
+#   kind: OCIRepository
+#   metadata:
+#     name: ${releaseName}-${appVersion}-chart
+#     namespace: ${releaseNamespace}
+#   spec:
+#     url: oci://ghcr.io/<org>/charts/nkp-etcd-maintenance
+#     ref: { tag: 0.3.0 }
+#
+# ---------------------------------------------------------------------------
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: ${releaseName}-${appVersion}-chart
+  namespace: ${releaseNamespace}
+spec:
+  interval: 5m
+  url: ${chartGitUrl}
+  ref:
+    branch: ${chartGitRef}
+  ignore: |
+    # Keep only the chart we need; everything else (catalog metadata,
+    # bootstrap manifests, docs, evidence) is ignored.
+    /*
+    !/charts/nkp-etcd-maintenance/**
+---
+# ---------------------------------------------------------------------------
+# HelmRelease — Flux installs the chart from the GitRepository above with a
+# layered values stack:
+#   1) chart's bundled values.yaml
+#   2) defaults ConfigMap (catalog-level override; see cm.yaml in this dir)
+#   3) optional user override ConfigMap (Kommander UI / AppDeployment form)
+#
+# Target namespace is `kube-system` because the chart mounts
+# /etc/kubernetes/pki/etcd from the host — the kubeadm canonical PKI dir
+# that lives on control-plane nodes.
+# ---------------------------------------------------------------------------
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: nkp-etcd-maintenance
+  namespace: ${releaseNamespace}
+spec:
+  chart:
+    spec:
+      chart: charts/nkp-etcd-maintenance
+      sourceRef:
+        kind: GitRepository
+        name: ${releaseName}-${appVersion}-chart
+        namespace: ${releaseNamespace}
+  interval: 15s
+  install:
+    remediation:
+      retries: 30
+    createNamespace: false
+  upgrade:
+    remediation:
+      retries: 30
+  releaseName: nkp-etcd-maintenance
+  targetNamespace: kube-system
+  valuesFrom:
+    # Catalog-level defaults shipped with this app version.
+    - kind: ConfigMap
+      name: ${releaseName}-${appVersion}-defaults
+    # Operator-supplied overrides (Kommander UI / AppDeployment form).
+    - kind: ConfigMap
+      name: ${releaseName}-overrides
+      optional: true

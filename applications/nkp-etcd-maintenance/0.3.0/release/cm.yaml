@@ -1,0 +1,116 @@
+---
+# ---------------------------------------------------------------------------
+# Catalog defaults ConfigMap. Layer 2 of the chart values merge stack:
+#   1. Helm chart's bundled values.yaml          (from the chart)
+#   2. THIS ConfigMap                             (catalog default override)
+#   3. ${releaseName}-overrides                   (operator-supplied)
+#
+# Why this exists in addition to the chart's own values.yaml:
+# Platform engineering can tune a default without cutting a new chart
+# release. E.g., bumping `image.tag` after a CVE, raising the default cron
+# schedule frequency for a specific NKP minor, etc.
+# ---------------------------------------------------------------------------
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ${releaseName}-${appVersion}-defaults
+  namespace: ${releaseNamespace}
+data:
+  values.yaml: |-
+    # ----------------------------------------------------------------
+    # Defrag (always on; threshold-gated; safe-by-default).
+    # ----------------------------------------------------------------
+    defragmentation:
+      enabled: true
+      schedule: "30 2 * * *"
+      defragRule: "dbQuotaUsage > 0.5 || dbSize - dbSizeInUse > 200*1024*1024"
+      endpoint: "https://127.0.0.1:2379"
+      cluster: true
+      leaderLast: true
+      waitBetweenDefrags: "1m"
+      autoDisalarm: false
+      etcdPkiHostPath: /etc/kubernetes/pki/etcd
+
+    # ----------------------------------------------------------------
+    # Snapshot CronJob — DISABLED by default; opt-in.
+    # ----------------------------------------------------------------
+    snapshot:
+      enabled: false
+      schedule: "0 3 * * *"
+      clusterName: ""
+      endpoint: "https://127.0.0.1:2379"
+      etcdPkiHostPath: /etc/kubernetes/pki/etcd
+      etcdImage:
+        repository: registry.k8s.io/etcd
+        tag: "3.5.15-0"
+        pullPolicy: IfNotPresent
+      etcdResources:
+        requests: { cpu: 100m, memory: 256Mi, ephemeral-storage: 2Gi }
+        limits:   { cpu: 500m, memory: 1Gi,   ephemeral-storage: 10Gi }
+      s3:
+        enabled: false
+        endpoint: ""
+        region: "us-east-1"
+        bucket: ""
+        prefix: "etcd-snapshots"
+        pathStyle: true
+        insecureSkipTLSVerify: false
+        credentialsSecret:
+          name: ""
+          accessKeyKey: "access-key-id"
+          secretKeyKey: "secret-access-key"
+        uploader:
+          image:
+            repository: minio/mc
+            tag: "RELEASE.2024-11-21T17-21-54Z"
+            pullPolicy: IfNotPresent
+        resources:
+          requests: { cpu: 50m,  memory: 64Mi  }
+          limits:   { cpu: 200m, memory: 256Mi }
+      successfulJobsHistoryLimit: 7
+      failedJobsHistoryLimit: 7
+      startingDeadlineSeconds: 300
+      ttlSecondsAfterFinished: 86400
+
+    # ----------------------------------------------------------------
+    # Observability — alerts enabled by default; thresholds are
+    # conservative production-safe defaults.
+    # ----------------------------------------------------------------
+    alerts:
+      enabled: true
+      etcdScrapeJobLabel: kube-etcd
+      thresholds:
+        dbHighUsageRatio: 0.7
+        dbCriticalUsageRatio: 0.9
+        highFragmentationBytes: 524288000
+      for:
+        memberNoLeader: 1m
+        dbHighUsage: 1h
+        dbCriticalUsage: 5m
+        highFragmentation: 1h
+
+    # ----------------------------------------------------------------
+    # Operator tool: etcd-quota-bumper. DISABLED by default.
+    # Enable only when explicitly raising --quota-backend-bytes on every
+    # control-plane node.
+    # ----------------------------------------------------------------
+    quotaBumper:
+      enabled: false
+
+    # ----------------------------------------------------------------
+    # Shared.
+    # ----------------------------------------------------------------
+    image:
+      repository: ghcr.io/ahrtr/etcd-defrag
+      tag: v0.40.0
+      pullPolicy: IfNotPresent
+
+    resources:
+      requests: { cpu: 50m,  memory: 64Mi }
+      limits:   { cpu: 200m, memory: 256Mi }
+
+    successfulJobsHistoryLimit: 3
+    failedJobsHistoryLimit: 3
+
+    commonLabels: {}
+    cronJobAnnotations: {}

@@ -1,0 +1,10 @@
+---
+# ---------------------------------------------------------------------------
+# Workspace namespace for the virtual catalog's chart + Flux resources.
+#
+# We use Kommander's default workspace (`kommander-default-workspace`) so
+# the catalog and any AppDeployments derived from it land in the same place
+# Kommander shows under "Workspace > Applications" in the dashboard.
+# ---------------------------------------------------------------------------
+# Namespace already exists; included here for clarity. Not applied by
+# kustomize (intentionally).

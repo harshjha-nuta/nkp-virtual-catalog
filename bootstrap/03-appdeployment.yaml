@@ -1,0 +1,33 @@
+---
+# ---------------------------------------------------------------------------
+# AppDeployment — instructs Kommander to install the ClusterApp registered
+# in 02-clusterapp.yaml on the workspace's clusters.
+#
+# Operators can ALSO create this via the NKP dashboard:
+#   Workspace > Applications > NKP etcd Maintenance (TEST CATALOG) > Deploy
+#
+# This file exists so the install can be reproduced via `kubectl apply -k`
+# without going through the UI (useful for CI / automated testing).
+# ---------------------------------------------------------------------------
+apiVersion: apps.kommander.d2iq.io/v1alpha3
+kind: AppDeployment
+metadata:
+  name: nkp-etcd-maintenance
+  namespace: kommander-default-workspace
+spec:
+  appRef:
+    kind: ClusterApp
+    appID: nkp-etcd-maintenance
+    name: nkp-etcd-maintenance-0.3.0
+  clusterConfigOverrides:
+    # Apply to ALL attached workload clusters in this workspace. For a
+    # multi-cluster workspace, tighten this selector to specific
+    # cluster-names via:
+    #   matchExpressions:
+    #     - key: kommander.d2iq.io/cluster-name
+    #       operator: In
+    #       values: [<cluster-name>]
+    - appVersion: "0.3.0"
+      clusterSelector: {}
+      configMapName: ""        # placeholder — set to a ConfigMap with
+                               # values.yaml to override the catalog defaults

@@ -1,0 +1,33 @@
+---
+# ---------------------------------------------------------------------------
+# ClusterApp — registers `nkp-etcd-maintenance@0.3.0` as a known catalog
+# entry in Kommander. After this is applied, the app appears under
+# Workspace > Applications in the NKP dashboard, with a "Deploy" button.
+#
+# `sourceRef` points at the GitRepository created in 01-...yaml. Kommander
+# scans `applications/<appId>/<version>/` inside that source and, when the
+# operator clicks Deploy (or an AppDeployment is created), instantiates the
+# HelmRelease + ConfigMaps that ship in that directory.
+#
+# `apps.kommander.nutanix.com/applications-dir-name: applications` tells
+# Kommander which top-level directory in the GitRepository holds the
+# catalog entries.
+# ---------------------------------------------------------------------------
+apiVersion: apps.kommander.d2iq.io/v1alpha3
+kind: ClusterApp
+metadata:
+  name: nkp-etcd-maintenance-0.3.0
+  annotations:
+    apps.kommander.d2iq.io/display-name: "NKP etcd Maintenance (TEST CATALOG)"
+    apps.kommander.d2iq.io/category: "application-and-data-management"
+    apps.kommander.d2iq.io/licensing: "pro,ultimate"
+    apps.kommander.d2iq.io/scope: "workspace"
+    apps.kommander.d2iq.io/type: "custom"
+    apps.kommander.nutanix.com/applications-dir-name: "applications"
+spec:
+  appId: nkp-etcd-maintenance
+  version: "0.3.0"
+  sourceRef:
+    kind: GitRepository
+    name: nkp-virtual-catalog
+    namespace: kommander-default-workspace
