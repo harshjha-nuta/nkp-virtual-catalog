@@ -18,9 +18,9 @@ metadata:
   namespace: kommander-default-workspace
 spec:
   interval: 5m
-  url: REPLACE_ME_WITH_CATALOG_GIT_URL
+  url: https://github.com/harshjha-nuta/nkp-virtual-catalog.git
   ref:
-    branch: REPLACE_ME_WITH_BRANCH
+    branch: main
   ignore: |
     # Only fetch what the catalog Kustomization renders. Everything below
     # `charts/` is consumed by the inner HelmRelease via its own GitRepo.

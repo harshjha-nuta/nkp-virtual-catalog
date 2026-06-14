@@ -31,9 +31,9 @@ metadata:
   namespace: ${releaseNamespace}
 spec:
   interval: 5m
-  url: ${chartGitUrl}
+  url: https://github.com/harshjha-nuta/nkp-virtual-catalog.git
   ref:
-    branch: ${chartGitRef}
+    branch: main
   ignore: |
     # Keep only the chart we need; everything else (catalog metadata,
     # bootstrap manifests, docs, evidence) is ignored.
