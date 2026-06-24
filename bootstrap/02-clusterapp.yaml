@@ -28,6 +28,6 @@ spec:
   appId: nkp-etcd-maintenance
   version: "0.3.0"
   sourceRef:
-    kind: GitRepository
-    name: nkp-virtual-catalog
-    namespace: kommander-default-workspace
+      kind: GitRepository
+      name: nkp-virtual-catalog
+      namespace: kommander-default-workspace
